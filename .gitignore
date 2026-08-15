@@ -1,0 +1,14 @@
+.env
+
+# Virtual environment
+.venv/
+
+# Python cache
+**/__pycache__/
+*.py[cod]
+
+# VS Code
+.vscode/
+
+# code-workspace
+*.code-workspace
