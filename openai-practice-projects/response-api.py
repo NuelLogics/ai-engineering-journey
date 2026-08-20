@@ -11,7 +11,7 @@ client = OpenAI(
 
 
 response = client.responses.create(
-    model="llama-3.3-70b-versatile",
+    model="openai/gpt-oss-120b",
     input="What is Software Engineering in one sentence to an untechnical man?",
     temperature=0.7,
     max_output_tokens=100,

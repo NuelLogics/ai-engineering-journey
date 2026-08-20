@@ -8,16 +8,16 @@ load_dotenv()
 client = OpenAI(
     api_key=os.getenv("GROQ_API_KEY"), base_url="https://api.groq.com/openai/v1"
 )
+# -------Commented out code to list all available models in the Groq API. Uncomment to use.-------
+# models = client.models.list()
 
-models = client.models.list()
-
-for model in models.data:
-    print(model.id)
+# for model in models.data:
+#     print(model.id)
 # ------------------------------------------------------------------------------
 
 
 response = client.chat.completions.create(
-    model="llama-3.1-8b-instant",
+    model="openai/gpt-oss-120b",
     messages=[
         {"role": "system", "content": "You are a helpful Python tutor."},
         {
@@ -28,20 +28,19 @@ response = client.chat.completions.create(
             "role": "assistant",
             "content": "The OpenAI Python SDK is a library that allows you to easily integrate OpenAI's language model into your Python applications.",
         },
-        {"role": "user", "content": "Give me a one-line example."},
     ],
     temperature=0.0,  # deterministic — factual answer
     max_tokens=100,
 )
-print("\n=== Test 2: Multi-turn ===")
+print("\n=== Test 1: Single-turn ===")
 print(response.choices[0].message.content)
 
 
 # -----------------------------------------------------------------------------------
 
 
-response = client.chat.completions.create(
-    model="llama-3.1-8b-instant",
+response2 = client.chat.completions.create(
+    model="openai/gpt-oss-120b",
     messages=[
         {
             "role": "system",
@@ -58,4 +57,4 @@ response = client.chat.completions.create(
 )
 
 
-print(response.choices[0].message.content)
+print(response2.choices[0].message.content)
