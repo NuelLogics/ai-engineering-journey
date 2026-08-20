@@ -1,14 +1,25 @@
-.env
-
 # Virtual environment
 .venv/
+venv/
+env/
+
+# Environment variables / secrets
+.env
+.env.*
 
 # Python cache
-**/__pycache__/
+__pycache__/
 *.py[cod]
+
+# Jupyter
+.ipynb_checkpoints/
 
 # VS Code
 .vscode/
 
-# code-workspace
+# OS files
+.DS_Store
+Thumbs.db
+
+
 *.code-workspace
