@@ -16,4 +16,15 @@ response = client.responses.create(
     temperature=0.7,
     max_output_tokens=100,
 )
+
+
 print(response.output_text)
+
+print("\n=== Responses API object ===")
+print("ID:               ", response.id)
+print("Model:            ", response.model)
+print("Status:           ", response.status)  # instead of finish_reason
+print("Content:          ", response.output_text)
+print("Input tokens:     ", response.usage.input_tokens)
+print("Output tokens:    ", response.usage.output_tokens)
+print("Total tokens:     ", response.usage.total_tokens)

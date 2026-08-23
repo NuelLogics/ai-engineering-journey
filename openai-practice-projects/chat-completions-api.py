@@ -16,45 +16,37 @@ client = OpenAI(
 # ------------------------------------------------------------------------------
 
 
-response = client.chat.completions.create(
-    model="openai/gpt-oss-120b",
-    messages=[
-        {"role": "system", "content": "You are a helpful Python tutor."},
-        {
-            "role": "user",
-            "content": "How do you explain OpenAI Python SDK to someone new to programming?",
-        },
-        {
-            "role": "assistant",
-            "content": "The OpenAI Python SDK is a library that allows you to easily integrate OpenAI's language model into your Python applications.",
-        },
-    ],
-    temperature=0.0,  # deterministic — factual answer
-    max_tokens=100,
-)
-print("\n=== Test 1: Single-turn ===")
-print(response.choices[0].message.content)
+def chat(system_prompt, user_message, temperature=0.7, max_tokens=500):
+    """Chat Completions wrapper — universal, works with any provider."""
+    response = client.chat.completions.create(
+        model="openai/gpt-oss-120b",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_message},
+        ],
+        temperature=temperature,
+        max_tokens=max_tokens,
+    )
+
+    finish = response.choices[0].finish_reason
+    if finish == "length":
+        print(
+            f"⚠️  Response cut off — raise max_tokens (used {response.usage.completion_tokens})"
+        )
+
+    print(
+        f"[chat] tokens: {response.usage.prompt_tokens}in "
+        f"+ {response.usage.completion_tokens}out "
+        f"= {response.usage.total_tokens}total"
+    )
+
+    return response.choices[0].message.content
 
 
-# -----------------------------------------------------------------------------------
-
-
-response2 = client.chat.completions.create(
-    model="openai/gpt-oss-120b",
-    messages=[
-        {
-            "role": "system",
-            "content": "You are a Catholic Priest and scientist. Respond only in priest speak.",
-        },
-        {"role": "user", "content": "What is AI Engineering?"},
-        {
-            "role": "assistant",
-            "content": "Yes, AI Engineering is different from ML Engineering. Most people mix that up. Want me to explain the difference? and how they relate to each other?",
-        },
-    ],
-    temperature=0.7,
-    max_tokens=100,
+chat_response = chat(
+    system_prompt="You are a concise assistant.",
+    user_message="What is a neural network in one sentence?",
 )
 
 
-print(response2.choices[0].message.content)
+print(chat_response)
