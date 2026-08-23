@@ -1,8 +1,12 @@
-# === SKILL 3C: Reusable helpers ===
+"""
+
+=== SKILL 3C: Reusable helpers ===
 
 
 def chat(system_prompt, user_message, temperature=0.7, max_tokens=500):
-    """Chat Completions wrapper — universal, works with any provider."""
+
+    ---Chat Completions wrapper — universal, works with any provider.---
+
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[
@@ -29,7 +33,9 @@ def chat(system_prompt, user_message, temperature=0.7, max_tokens=500):
 
 
 def respond(instructions, user_input, temperature=0.7, max_tokens=500):
-    """Responses API wrapper — OpenAI recommended for new projects."""
+
+    ---Responses API wrapper — OpenAI recommended for new projects.---
+
     response = client.responses.create(
         model="llama-3.3-70b-versatile",
         instructions=instructions,
@@ -50,9 +56,14 @@ def respond(instructions, user_input, temperature=0.7, max_tokens=500):
     return response.output_text
 
 
-# --- Test both helpers ---
+ --- Test both helpers ---
+
 print("=== chat() helper ===")
 print(chat("You are a concise assistant.", "What is a neural network?"))
 
 print("\n=== respond() helper ===")
 print(respond("You are a concise assistant.", "What is a neural network?"))
+
+
+
+"""

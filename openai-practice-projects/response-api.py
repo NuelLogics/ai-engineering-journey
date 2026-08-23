@@ -1,5 +1,4 @@
 import os
-
 from dotenv import load_dotenv
 from openai import OpenAI
 
@@ -14,7 +13,7 @@ response = client.responses.create(
     model="openai/gpt-oss-120b",
     input="What is Software Engineering in one sentence to an untechnical man?",
     temperature=0.7,
-    max_output_tokens=100,
+    max_output_tokens=200,
 )
 
 
