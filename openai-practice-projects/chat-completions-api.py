@@ -17,7 +17,7 @@ client = OpenAI(
 
 # for model in models.data:
 #     print(model.id)
-# ------------------------------------------------------------------------------
+# ----------------------------------------------------------------
 
 
 def chat(system_prompt, user_message, temperature=0.7, max_tokens=500):
