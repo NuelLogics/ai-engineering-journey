@@ -2,6 +2,7 @@ from openai import OpenAI
 import os
 from dotenv import load_dontenv
 import logging
+from constants import Contexts
 
 load_dontenv()
 
@@ -19,11 +20,16 @@ except Exception as e:
     logging.error(f"Error initializing OpenAI client: {e}")
 
 # Configure the request to have a conversation memory. Every quetions and answer should be appended to a message(datatype= python objects/list[])
+
+incoming_message = input("")
 response = client.chat.completions(
     model="openai/gpt-oss-120b",
     messages=[
-        {"role": "system", "content": "____"},
-        {"role": "user", "content": "____"},
+        {
+            "role": "system",
+            "content": f"You are a helpful assistant for Sckye Hospital. Context: {Contexts}",
+        },
+        {"role": "user", "content": f"Incoming_message: {incoming_message}"},
         {"role": "asssistant", "content": "____"},
     ],
     temperature=0.5,
