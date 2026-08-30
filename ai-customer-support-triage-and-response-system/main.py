@@ -1,15 +1,16 @@
 from openai import OpenAI
 import os
-from dotenv import load_dontenv
+from dotenv import load_dotenv
 import logging
-from constants import Contexts
+from data import Contexts
 
-load_dontenv()
+load_dotenv()
 
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    filename="app.log",
+    level=logging.INFO,
+    format="%(levelname)s - %(name)s - %(asctime)s - %(message)s",
 )
-
 
 try:
     client = OpenAI(
@@ -21,26 +22,39 @@ except Exception as e:
 
 # Configure the request to have a conversation memory. Every quetions and answer should be appended to a message(datatype= python objects/list[])
 
-incoming_message = input("")
-response = client.chat.completions(
-    model="openai/gpt-oss-120b",
-    messages=[
-        {
-            "role": "system",
-            "content": f"You are a helpful assistant for Sckye Hospital. Context: {Contexts}",
-        },
-        {"role": "user", "content": f"Incoming_message: {incoming_message}"},
-        {"role": "asssistant", "content": "____"},
-    ],
-    temperature=0.5,
-    max_completion_tokens=500,
-    stream=True,
-)
+
+message = [
+    {
+        "role": "system",
+        "content": f"You are a helpful assistant for Sckye Hospital. Context: {Contexts}",
+    }
+]
+
+while True:
+    incoming_message = input("You: ")
+    message.append({"role": "user", "content": incoming_message})
+
+    response = client.chat.completions.create(
+        model="openai/gpt-oss-120b",
+        messages=message,
+        temperature=0.5,
+        max_completion_tokens=500,
+        stream=True,
+    )
+
+    full_response = ""
+    for chunk in response:
+        delta = chunk.choices[0].delta.content
+        if delta is not None:
+            print(delta, end="", flush=True)
+            full_response += delta
+
+    message.append({"role": "assistant", "content": full_response})
+    print()  # newline
+
+    # Optional: exit condition
+    if incoming_message.lower() == "quit":
+        break
 
 
-full_response = ""
-for chunk in response:
-    delta = chunk.choices[0].delta.content
-    if delta is not None:
-        print(delta, end="", flush=True)
-        full_response += delta
+#  NEXT IS TO CLEAN THE RESPONSE & MAKE THE REQUEST TO BE COMING FROM EMAIL
