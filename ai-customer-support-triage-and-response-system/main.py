@@ -34,13 +34,19 @@ while True:
     incoming_message = input("You: ")
     message.append({"role": "user", "content": incoming_message})
 
-    response = client.chat.completions.create(
-        model="openai/gpt-oss-120b",
-        messages=message,
-        temperature=0.5,
-        max_completion_tokens=500,
-        stream=True,
-    )
+    try:
+        response = client.chat.completions.create(
+            model="openai/gpt-oss-120b",
+            messages=message,
+            temperature=0.5,
+            max_completion_tokens=500,
+            stream=True,
+        )
+
+    except Exception as e:
+        logging.exception("Chat completion request failed: %s", e)
+        print("Sorry, I couldn't process that request right now")
+        break
 
     full_response = ""
     for chunk in response:
