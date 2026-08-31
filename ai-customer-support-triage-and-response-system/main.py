@@ -1,8 +1,10 @@
-from openai import OpenAI
 import os
-from dotenv import load_dotenv
 import logging
+
+from openai import OpenAI
+from dotenv import load_dotenv
 from data import Contexts
+
 
 load_dotenv()
 
@@ -12,6 +14,7 @@ logging.basicConfig(
     format="%(levelname)s - %(name)s - %(asctime)s - %(message)s",
 )
 
+
 try:
     client = OpenAI(
         api_key=os.getenv("GROQ_API_KEY"),
@@ -19,8 +22,6 @@ try:
     )
 except Exception as e:
     logging.error(f"Error initializing OpenAI client: {e}")
-
-# Configure the request to have a conversation memory. Every quetions and answer should be appended to a message(datatype= python objects/list[])
 
 
 message = [
