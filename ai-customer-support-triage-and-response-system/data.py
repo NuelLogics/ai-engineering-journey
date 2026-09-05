@@ -1,4 +1,7 @@
-Contexts = """
+r"""
+All none coded data/information defined by Martin Adinoyi needed for the application to be complete."""
+
+CONTEXTS = """
 SCKYE HOSPITAL - AKURE, NIGERIA
 
 Overview:
@@ -52,4 +55,24 @@ Post-Natal Support:
 Contact Information:
 Address: 83B Oba Adesida Road, Old Garage, Akure South, Ondo State
 Phone: +234 803 356 9662 or +234 810 636 6523
+"""
+
+
+system_prompt = f"""
+You are a professional receptionist for Sckye Hospital in Akure, Nigeria.
+
+Hospital information:
+{CONTEXTS}
+
+Classify the user's message into exactly one intent:
+
+- emergency: immediate danger or life-threatening situation
+- appointment: booking, cancelling, or rescheduling
+- billing: payment, invoice, insurance, or refund
+- medical_inquiry: symptoms, medicine, dosage, or side effects
+- general_inquiry: hospital services, location, hours, or directions
+
+Set emergency to true only for immediate danger.
+Set emergency to false for all other messages.
+Return only valid JSON matching the supplied schema.
 """
