@@ -3,7 +3,7 @@ import logging
 from pydantic import BaseModel, ConfigDict
 from openai import OpenAI
 from dotenv import load_dotenv
-from data import system_prompt
+from data import system_prompt, SUPPORT_SYSTEM_PROMPT
 from typing import Literal
 
 
@@ -16,7 +16,7 @@ logging.basicConfig(
 )
 
 
-def authn():
+def create_client():
     try:
         api_key = os.getenv("GROQ_API_KEY")
 
@@ -32,7 +32,7 @@ def authn():
         raise
 
 
-client = authn()
+client = create_client()
 
 conversation = [{"role": "system", "content": system_prompt}]
 
@@ -82,6 +82,38 @@ def detect_intent(client, user_question: str) -> IntentResult:
     return IntentResult.model_validate_json(raw_response)
 
 
+def emergency_tool():
+    emergency_number = "+234 810 636 6523"
+    return emergency_number
+
+
+# if intent.user_intent.lower() == "emergency":
+#     emergency_tool()
+
+
+def support_agent(client, conversation: list[dict[str, str]]) -> str:
+
+    messages = [
+        {"role": "system", "content": SUPPORT_SYSTEM_PROMPT},
+        *conversation,
+    ]
+
+    try:
+        response = client.chat.completions.create(
+            model="openai/gpt-oss-120b",
+            messages=messages,
+            temperature=0.1,
+            max_completion_tokens=1000,
+        )
+        return response.choices[0].message.content
+
+    except Exception:
+        logging.exception("Chat completion request failed")
+        raise
+
+
+conversation = []
+
 while True:
     incoming_message = input("You: ")
     if incoming_message.lower() == "quit":
@@ -91,7 +123,7 @@ while True:
     try:
         result = detect_intent(client, user_question=incoming_message)
     except Exception as error:
-        logging.exception("Chat completion request failed")
+        logging.exception("Intent detection failed")
         print(f"Technical error: {error}")
         print("Sorry, something went wrong. Please try again.")
         continue
@@ -100,15 +132,13 @@ while True:
 
     if result.emergency:
         print("This may be an emergency. Please contact the hospital immediately.")
+        print(f"Emergency contact: {emergency_tool()}")
         # emergency handler will go here
     else:
-        # answer agent will go here
-        pass
-
-# def emergency_tool():
-#     emergency_number = "+234 810 636 6523"
-#     return emergency_number
-
-
-# if intent.user_intent.lower() == "emergency":
-#     emergency_tool()
+        try:
+            answer = support_agent(client, conversation)
+            print(f"Assistant: {answer}")
+            conversation.append({"role": "assistant", "content": answer})
+        except Exception as error:
+            print(f"Technical error: {error}")
+            print("Sorry, something went wrong. Please try again.")
