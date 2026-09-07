@@ -128,7 +128,7 @@ while True:
         print("Sorry, something went wrong. Please try again.")
         continue
 
-    print(result.user_intent)
+    # print(result.user_intent)
 
     if result.emergency:
         print("This may be an emergency. Please contact the hospital immediately.")
