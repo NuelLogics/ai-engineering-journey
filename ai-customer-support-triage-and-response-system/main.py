@@ -1,16 +1,18 @@
 import os
 import logging
-from flask import Flask, request, jsonify
-import requests
-from pydantic import BaseModel, ConfigDict
-from openai import OpenAI
-from dotenv import load_dotenv
-from data import system_prompt, SUPPORT_SYSTEM_PROMPT
 from typing import Literal
+
+import requests
+from dotenv import load_dotenv
+from flask import Flask, jsonify, request
+from openai import OpenAI
+from pydantic import BaseModel, ConfigDict
+
+from data import SUPPORT_SYSTEM_PROMPT, system_prompt
 
 
 load_dotenv()
-# Initialize Flask app
+
 app = Flask(__name__)
 
 logging.basicConfig(
@@ -18,10 +20,13 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(levelname)s - %(name)s - %(asctime)s - %(message)s",
 )
-# Telegram Configurations
+
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-TELEGRAM_API_URL = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-# https://api.telegram.org/bot<token>/sendMessage?chat_id=<chat_id>&text=Hello   *
+TELEGRAM_API_URL = (
+    f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+    if TELEGRAM_BOT_TOKEN
+    else None
+)
 
 
 def create_client():
@@ -71,7 +76,6 @@ def detect_intent(client, user_question: str) -> IntentResult:
             messages=messages,
             temperature=0,
             max_completion_tokens=1000,
-            # stream=True,
             response_format={
                 "type": "json_schema",
                 "json_schema": {
@@ -91,8 +95,7 @@ def detect_intent(client, user_question: str) -> IntentResult:
 
 
 def emergency_tool():
-    emergency_number = "+234 810 636 6523"
-    return emergency_number
+    return "+234 810 636 6523"
 
 
 def support_agent(client, conversation: list[dict[str, str]]) -> str:
@@ -116,16 +119,27 @@ def support_agent(client, conversation: list[dict[str, str]]) -> str:
         raise
 
 
-# conversation = []
-
-
 def send_telegram_message(chat_id: int, text: str):
     """Utility function to fire HTTP POST requests back to Telegram API"""
+
+    if not TELEGRAM_API_URL:
+        logging.error("TELEGRAM_BOT_TOKEN missing. Cannot send message.")
+        return
+
     payload = {"chat_id": chat_id, "text": text}
+
     try:
-        requests.post(TELEGRAM_API_URL, json=payload)
+        response = requests.post(TELEGRAM_API_URL, json=payload, timeout=10)
+        response.raise_for_status()
+        logging.info("Telegram message sent successfully")
+
     except Exception:
         logging.exception("Failed to send message to Telegram")
+
+
+@app.get("/")
+def home():
+    return jsonify({"status": "ok", "message": "Hospital bot is running!"}), 200
 
 
 # ----------------------------------------------------------------
@@ -133,74 +147,55 @@ def send_telegram_message(chat_id: int, text: str):
 # ----------------------------------------------------------------
 @app.route("/webhook", methods=["POST"])
 def telegram_webhook():
-    update = request.get_json()
+    if not request.is_json:
+        logging.error("Received non-JSON request")
+        return jsonify({"status": "error", "message": "Invalid request format"}), 400
+    update = request.get_json(silent=True)
 
-    # Ensure the update actually contains a text message
-    if "message" in update and "text" in update["message"]:
-        chat_id = update["message"]["chat"]["id"]
-        incoming_message = update["message"]["text"]
+    if not update:
+        return jsonify({"status": "empty_update"}), 400
 
-        # NOTE: For multiple users, you'd usually pull/save this conversation history
-        # from a database (like SQLite/Redis) matching the chat_id.
-        # For now, we seed an isolated session list for this single request block.
-        current_conversation = [{"role": "user", "content": incoming_message}]
+    # Ensure the update contains a message with text before processing
+    if not update:
+        return jsonify({"status": "empty_update"}), 400
 
+    message = update.get("message")
+    if not message or "text" not in message:
+        return jsonify({"status": "ignored"}), 200
+
+    chat_id = update["message"]["chat"]["id"]
+    incoming_message = update["message"]["text"]
+
+    # NOTE: For multiple users, you'd usually pull/save this conversation history
+    # from a database (like SQLite/Redis) matching the chat_id.
+    # For now, we seed an isolated session list for this single request block.
+    current_conversation = [{"role": "user", "content": incoming_message}]
+
+    try:
+        result = detect_intent(client, user_question=incoming_message)
+    except Exception:
+        logging.exception("Intent detection failed")
+        send_telegram_message(chat_id, "Sorry, something went wrong. Please try again.")
+        return jsonify({"status": "error"}), 200
+
+    if result.emergency:
+        emergency_msg = (
+            "⚠️ This may be an emergency. Please contact the hospital immediately.\n"
+            f"Emergency contact: {emergency_tool()}"
+        )
+        send_telegram_message(chat_id, emergency_msg)
+    else:
         try:
-            result = detect_intent(client, user_question=incoming_message)
-        except Exception as error:
-            logging.exception("Intent detection failed")
+            answer = support_agent(client, current_conversation)
+            send_telegram_message(chat_id, answer)
+        except Exception:
             send_telegram_message(
                 chat_id, "Sorry, something went wrong. Please try again."
             )
-            return jsonify({"status": "error"}), 200
-
-        if result.emergency:
-            emergency_msg = (
-                "⚠️ This may be an emergency. Please contact the hospital immediately.\n"
-                f"Emergency contact: {emergency_tool()}"
-            )
-            send_telegram_message(chat_id, emergency_msg)
-        else:
-            try:
-                answer = support_agent(client, current_conversation)
-                send_telegram_message(chat_id, answer)
-            except Exception as error:
-                send_telegram_message(
-                    chat_id, "Sorry, something went wrong. Please try again."
-                )
 
     # Always return a 200 OK so Telegram doesn't keep retrying the same message
     return jsonify({"status": "success"}), 200
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
-
-# while True:
-#     incoming_message = input("You: ")
-#     if incoming_message.lower() == "quit":
-#         break
-#     conversation.append({"role": "user", "content": incoming_message})
-
-#     try:
-#         result = detect_intent(client, user_question=incoming_message)
-#     except Exception as error:
-#         logging.exception("Intent detection failed")
-#         print(f"Technical error: {error}")
-#         print("Sorry, something went wrong. Please try again.")
-#         continue
-
-#     # print(result.user_intent)
-
-#     if result.emergency:
-#         print("This may be an emergency. Please contact the hospital immediately.")
-#         print(f"Emergency contact: {emergency_tool()}")
-#         # emergency handler will go here
-#     else:
-#         try:
-#             answer = support_agent(client, conversation)
-#             print(f"Assistant: {answer}")
-#             conversation.append({"role": "assistant", "content": answer})
-#         except Exception as error:
-#             print(f"Technical error: {error}")
-#             print("Sorry, something went wrong. Please try again.")
+    app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=False)
